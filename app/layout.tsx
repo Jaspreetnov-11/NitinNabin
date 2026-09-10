@@ -1,12 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Open_Sans } from "next/font/google";
 import "./globals.css";
 
-const openSans = Open_Sans({
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-os",
-  display: "swap",
-});
+const FONTS =
+  "https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&family=Archivo:wght@400;500;600&family=Anek+Devanagari:wght@300..800&display=swap";
 
 export const metadata: Metadata = {
   title: "Nitin Nabin — National President, Bharatiya Janata Party",
@@ -29,7 +25,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={openSans.variable}>
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href={FONTS} rel="stylesheet" />
+      </head>
       <body>{children}</body>
     </html>
   );

@@ -1,4 +1,5 @@
 import Site from "@/components/Site";
+import ScrollReset from "@/components/ScrollReset";
 import { getSiteContent } from "@/lib/data";
 
 // Re-fetch from Supabase at most once a minute (ISR). Edits in the Supabase
@@ -7,5 +8,10 @@ export const revalidate = 60;
 
 export default async function Page() {
   const content = await getSiteContent();
-  return <Site content={content} />;
+  return (
+    <>
+      <ScrollReset />
+      <Site content={content} />
+    </>
+  );
 }

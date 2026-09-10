@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type TouchEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type TouchEvent } from "react";
 import type { Lang, Platform, SiteContent } from "@/lib/types";
 import { STRINGS, PLATFORMS } from "@/lib/i18n";
 import { fmtDate } from "@/lib/format";
@@ -8,6 +8,12 @@ import ContactForm from "./ContactForm";
 
 const IMG = "https://www.nitinnabin.com/images";
 const NAV_IDS = ["home", "journey", "updates", "media", "contact"];
+
+/** "05 Assembly terms" → ["05", "Assembly terms"]; no leading number → ["", text] */
+function splitStat(s: string): [string, string] {
+  const m = s.match(/^(\d{2,4})\s*(.*)$/);
+  return m ? [m[1], m[2]] : ["", s];
+}
 
 export default function Site({ content }: { content: SiteContent }) {
   const [lang, setLang] = useState<Lang>("en");
@@ -17,7 +23,6 @@ export default function Site({ content }: { content: SiteContent }) {
   // journey
   const [jIdx, setJIdx] = useState(Math.max(0, content.milestones.length - 1));
   const yearsRef = useRef<HTMLDivElement>(null);
-  const hasMounted = useRef(false);
   const j = content.milestones[jIdx];
 
   // social
@@ -30,6 +35,17 @@ export default function Site({ content }: { content: SiteContent }) {
   const cur = Math.min(page[soc], Math.max(0, n - 1));
   const slide = (d: number) => setPage((p) => ({ ...p, [soc]: Math.max(0, Math.min(n - 1, cur + d)) }));
 
+  // mobile "tap to open" / "show more" state (CSS only applies it below 768px)
+  const [bioOpen, setBioOpen] = useState(false);
+  const [posOpen, setPosOpen] = useState(false);
+  const [galOpen, setGalOpen] = useState(false);
+  const [jOpen, setJOpen] = useState(false);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const toggle = (key: string) => (e: MouseEvent) => {
+    if (window.innerWidth >= 768 || (e.target as HTMLElement).closest("a")) return;
+    setOpen((o) => ({ ...o, [key]: !o[key] }));
+  };
+
   // bottom nav
   const [active, setActive] = useState("home");
 
@@ -37,22 +53,14 @@ export default function Site({ content }: { content: SiteContent }) {
     document.documentElement.lang = lang;
   }, [lang]);
 
- useEffect(() => {
-  if (!hasMounted.current) {
-    hasMounted.current = true;
-    return;
-  }
-
-  const sel = yearsRef.current?.querySelector<HTMLElement>(
-    '[aria-selected="true"]'
-  );
-
-  sel?.scrollIntoView({
-    block: "nearest",
-    inline: "center",
-    behavior: "smooth",
-  });
-}, [jIdx]);
+  // Keep the selected year pill centred inside its own strip (scrolls the strip only, never the page).
+  const jMounted = useRef(false);
+  useEffect(() => {
+    if (!jMounted.current) { jMounted.current = true; return; }
+    const ys = yearsRef.current;
+    const sel = ys?.children[jIdx] as HTMLElement | undefined;
+    if (ys && sel) ys.scrollTo({ left: sel.offsetLeft - ys.clientWidth / 2 + sel.offsetWidth / 2, behavior: "smooth" });
+  }, [jIdx]);
 
   useEffect(() => {
     const io = new IntersectionObserver(
@@ -76,6 +84,19 @@ export default function Site({ content }: { content: SiteContent }) {
 
   const ticker = content.updates.map((u) => `${fmtDate(u.event_date, lang)} — ${L(u.title_en, u.title_hi)}`);
 
+  const artCards = (dup: number) =>
+    content.updates.map((u) => (
+      <a className="c" href="#updates" key={`${dup}-${u.id}`}>
+        {u.image_url && <img src={u.image_url} alt="" loading="lazy" />}
+        <div className="b">
+          <div className="t">{L(u.kind_en, u.kind_hi)} · {fmtDate(u.event_date, lang)}</div>
+          <h3>{L(u.title_en, u.title_hi)}</h3>
+          <p>{L(u.summary_en, u.summary_hi)}</p>
+          <small>{L(u.place_en, u.place_hi)}</small>
+        </div>
+      </a>
+    ));
+
   return (
     <>
       <header className="top">
@@ -83,7 +104,7 @@ export default function Site({ content }: { content: SiteContent }) {
           <a className="b" href="#home"><span>{t.name}</span><small>{t.role_short}</small></a>
           <ul>
             <li><a href="#about">{t.n_about}</a></li><li><a href="#journey">{t.n_journey}</a></li><li><a href="#work">{t.n_work}</a></li>
-            <li><a href="#updates">{t.n_updates}</a></li><li><a href="#speeches">{t.n_speeches}</a></li><li><a href="#media">{t.n_media}</a></li><li><a href="#contact">{t.n_contact}</a></li>
+            <li><a href="#updates">{t.n_updates}</a></li><li><a href="#media">{t.n_media}</a></li><li><a href="#contact">{t.n_contact}</a></li>
           </ul>
           <div className="l" role="group" aria-label="Language">
             <button className={lang === "en" ? "on" : ""} onClick={() => setLang("en")}>EN</button>
@@ -94,7 +115,6 @@ export default function Site({ content }: { content: SiteContent }) {
 
       <section className="hero" id="home">
         <div className="wrap">
-          <div className="blob" />
           <div className="txt">
             <div className="r">{t.role}</div>
             <h1><span>{t.first}</span><span>{t.last}</span></h1>
@@ -117,25 +137,32 @@ export default function Site({ content }: { content: SiteContent }) {
 
       <section className="intro" id="about">
         <div className="wrap">
-          <div className="ph"><img src={`${IMG}/portrait-bio.avif`} alt="" loading="lazy" /><span>{t.born}</span></div>
-          <div>
-            <h2>{t.about_h}</h2>
-            <div className="facts">{t.facts.map((f) => <div key={f[0]}><small>{f[0]}</small><b>{f[1]}</b></div>)}</div>
-            <div>{t.bio.map((p, i) => <p key={i}>{p}</p>)}</div>
+          <div className="l">
+            <div className="eb">{t.about_eb}</div>
+            <h2>{t.about_h[0]}<em>{t.about_h[1]}</em></h2>
             <a className="more" href="#journey">{t.bio_more}</a>
+            <div className="facts">{t.facts.map((f) => <div key={f[0]}><small>{f[0]}</small>{f[1]}</div>)}</div>
+          </div>
+          <div className={`col${bioOpen ? " open" : ""}`}>
+            <p className="big">{t.bio[0]}</p>
+            <p className="sm">{t.bio[3]}</p>
+            <div className="cx"><p className="sm">{t.bio[1]}</p><p className="sm">{t.bio[2]}</p></div>
+            <button className={`more-btn${bioOpen ? " open" : ""}`} onClick={() => setBioOpen((v) => !v)}>
+              <span className="b">{t.read_more}</span><span className="a">{t.show_less}</span>
+            </button>
           </div>
         </div>
       </section>
 
-      <div className="band">
-        <img src={`${IMG}/hero-bg.jpg`} alt="" loading="lazy" />
-        <div className="cap"><div className="wrap"><b>{t.band1}</b><small>{t.band1s}</small></div></div>
-      </div>
-
       <section className="jr" id="journey">
         <div className="wrap">
-          <h2>{t.jr_h}</h2>
-          <p className="lead">{t.jr_p}</p>
+          <div className="head">
+            <div><h2>{t.jr_h}</h2><p className="lead">{t.jr_p}</p></div>
+            <div className="jnav">
+              <button onClick={() => setJIdx((i) => i - 1)} disabled={jIdx === 0}>←</button>
+              <button onClick={() => setJIdx((i) => i + 1)} disabled={jIdx >= content.milestones.length - 1}>→</button>
+            </div>
+          </div>
           <div className="years" role="tablist" ref={yearsRef}>
             {content.milestones.map((m, i) => (
               <button key={m.id} className="yr" role="tab" aria-selected={i === jIdx} onClick={() => setJIdx(i)}>
@@ -144,120 +171,46 @@ export default function Site({ content }: { content: SiteContent }) {
             ))}
           </div>
           {j && (
-            <article className="jcard" aria-live="polite">
+            <article className={`jcard${jOpen ? " open" : ""}`} aria-live="polite" onClick={(e) => { if (window.innerWidth < 768 && !(e.target as HTMLElement).closest("a")) setJOpen((v) => !v); }}>
               <div><div className="yy">{j.year}</div><div className="k">{L(j.kind_en, j.kind_hi)}</div></div>
               <div>
                 <h3>{L(j.title_en, j.title_hi)}</h3>
                 <div className="w">{L(j.place_en, j.place_hi)}</div>
                 <p>{L(j.body_en, j.body_hi)}</p>
-                <div className="rec"><b>{t.record}</b> — {L(j.record_en, j.record_hi)}</div>
+                <div className="rec"><b>{t.record}</b> {L(j.record_en, j.record_hi)}</div>
               </div>
             </article>
           )}
-          <div className="jnav">
-            <button onClick={() => setJIdx((i) => i - 1)} disabled={jIdx === 0}>←</button>
-            <button onClick={() => setJIdx((i) => i + 1)} disabled={jIdx >= content.milestones.length - 1}>→</button>
-          </div>
         </div>
       </section>
 
       <section className="four" id="work">
         <div className="wrap">
-          <h2>{t.four_h}</h2>
-          <p className="lead">{t.four_p}</p>
-          <div className="grid">
-            {t.four.map((f, i) => (
-              <article key={f[1]} className={`a${i + 1}`}>
-                <div className="n">0{i + 1}</div>
-                <div className="tg">{f[0]} ↗</div>
-                <h3>{f[1]}</h3>
-                <p>{f[2]}</p>
-                <ul>{f[3].map((x) => <li key={x}>{x}</li>)}</ul>
-              </article>
-            ))}
+          <div className="fh">
+            <div>
+              <div className="eb">{t.four_eb}</div>
+              <h2>{t.four_h[0]} <em>{t.four_h[1]}</em><br />{t.four_h[2]}</h2>
+            </div>
+            <p className="lead">{t.four_p}</p>
           </div>
-          <div className="rec">
-            <h3>{t.rec_h}</h3>
-            <p className="rp">{t.rec_p}</p>
-            <ol>{t.recl.map((r) => <li key={r[0]}><b>{r[0]}</b><span>{r[1]}</span></li>)}</ol>
-          </div>
-        </div>
-      </section>
-
-      <section className="pos">
-        <div className="wrap">
-          <h2>{t.pos_h}</h2>
-          <p className="lead">{t.pos_p}</p>
-          <ol>
-            {t.pos.map((p, i, a) => {
-              const last = i === a.length - 1;
-              return (
-                <li key={p[0] + p[1]} className={last ? "now" : undefined}>
-                  <span className="d">{p[0]}</span>
-                  <span>{last ? <b>{p[1]}</b> : p[1]}<span className="o">{p[2]}</span></span>
-                </li>
-              );
-            })}
-          </ol>
-          <p className="note">{t.pos_note}</p>
-        </div>
-      </section>
-
-      <div className="band">
-        <img src={`${IMG}/portrait-fields.avif`} alt="" loading="lazy" />
-        <div className="cap"><div className="wrap"><b>{t.band2}</b><small>{t.band2s}</small></div></div>
-      </div>
-
-      <section className="upd" id="updates">
-        <div className="wrap">
-          <div className="head"><h2>{t.upd_h}</h2><a href="#updates">{t.see_all}</a></div>
-          <div className="grid">
-            {content.updates.map((u) => (
-              <article className="u" key={u.id}>
-                {u.image_url && <img src={u.image_url} alt="" loading="lazy" />}
-                <div className="b">
-                  <span className="t">{L(u.kind_en, u.kind_hi)} · {fmtDate(u.event_date, lang)}</span>
-                  <h3>{L(u.title_en, u.title_hi)}</h3>
-                  <p>{L(u.summary_en, u.summary_hi)}</p>
-                  <small>{L(u.place_en, u.place_hi)}</small>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="sp" id="speeches">
-        <div className="wrap">
-          <h2>{t.sp_h}</h2>
-          <p className="lead">{t.sp_p}</p>
-          <ul>
-            {content.speeches.map((s) => (
-              <li key={s.id}>
-                <div>
-                  <span className="tg">{L(s.kind_en, s.kind_hi)}</span>
-                  <h3>{L(s.title_en, s.title_hi)}</h3>
-                  <small>{fmtDate(s.event_date, lang)} · {L(s.venue_en, s.venue_hi)}</small>
-                </div>
-                {s.video_url
-                  ? <a className="na yes" href={s.video_url} target="_blank" rel="noopener">{t.watch} ↗</a>
-                  : <span className="na">{t.na}</span>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="gal" id="media">
-        <div className="wrap">
-          <h2>{t.gal_h}</h2>
-          <div className="grid">
-            {content.gallery.map((g) => (
-              <a key={g.id} href={g.image_url} target="_blank" rel="noopener">
-                <img src={g.image_url} alt={L(g.caption_en, g.caption_hi)} loading="lazy" />
-                <span>{L(g.caption_en, g.caption_hi)}<small>{L(g.sub_en, g.sub_hi)}</small></span>
-              </a>
-            ))}
+          <div className="panel">
+            <div className="wm">04</div>
+            <div className="rings" />
+            <div className="por"><img src={`${IMG}/portrait-cutout.png`} alt="" loading="lazy" /></div>
+            <div className="cards">
+              {t.four.map((f, i) => {
+                const [num, label] = splitStat(f[3]);
+                return (
+                  <article key={f[1]} className={open[`four${i}`] ? "open" : undefined} onClick={toggle(`four${i}`)}>
+                    <span className="ar">↗</span>
+                    <div className="tg">{f[0]}</div>
+                    <h3>{f[1]}</h3>
+                    <p>{f[2]}</p>
+                    <div className="ft"><b>{num}</b><span>{label}</span></div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
@@ -266,10 +219,61 @@ export default function Site({ content }: { content: SiteContent }) {
         <div className="wrap">
           <h2>{t.nl_h}</h2>
           <div className="grid">
-            {t.nl.map((x) => (
-              <article key={x[0]}><span className="tg">{x[0]}</span><h3>{x[1]}</h3><div className="yrs">{x[2]}</div><p>{x[3]}</p></article>
+            {t.nl.map((x, i) => (
+              <article key={x[0]} className={`col${open[`nl${i}`] ? " open" : ""}`} onClick={toggle(`nl${i}`)}>
+                <span className="tg">{x[0]}</span><h3>{x[1]}</h3><div className="yrs">{x[2]}</div><p>{x[3]}</p>
+              </article>
             ))}
           </div>
+          <div className="rec">
+            <div className="h"><h3>{t.rec_h}</h3><p>{t.rec_p}</p></div>
+            <div className="tlx">{t.recl.map((r) => <div key={r[0]} data-y={r[0]}>{r[1]}</div>)}</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="pos">
+        <div className="wrap">
+          <h2>{t.pos_h}</h2>
+          <p className="lead">{t.pos_p}</p>
+          <ol className={posOpen ? "open" : undefined}>
+            {t.pos.map((p, i, a) => {
+              const last = i === a.length - 1;
+              return (
+                <li key={p[0] + p[1]} className={last ? "now" : undefined}>
+                  <span className="d">{p[0]}</span>
+                  <span>{last ? <b>{p[1]}</b> : <span className="ti">{p[1]}</span>}<span className="o">{p[2]}</span></span>
+                </li>
+              );
+            })}
+          </ol>
+          <button className={`more-btn${posOpen ? " open" : ""}`} onClick={() => setPosOpen((v) => !v)}>
+            <span className="b">{t.show_pos}</span><span className="a">{t.show_less}</span>
+          </button>
+        </div>
+      </section>
+
+      <section className="art" id="updates">
+        <div className="head">
+          <div><h2>{t.upd_h}</h2><p className="lead" style={{ marginTop: 4 }}>{t.art_p}</p></div>
+        </div>
+        <div className="track">{artCards(0)}{artCards(1)}</div>
+      </section>
+
+      <section className="gal" id="media">
+        <div className="wrap">
+          <h2>{t.gal_h}</h2>
+          <div className={`grid${galOpen ? " open" : ""}`}>
+            {content.gallery.map((g) => (
+              <a key={g.id} href={g.image_url} target="_blank" rel="noopener">
+                <img src={g.image_url} alt={L(g.caption_en, g.caption_hi)} loading="lazy" />
+                <span>{L(g.caption_en, g.caption_hi)}<small>{L(g.sub_en, g.sub_hi)}</small></span>
+              </a>
+            ))}
+          </div>
+          <button className={`more-btn${galOpen ? " open" : ""}`} onClick={() => setGalOpen((v) => !v)}>
+            <span className="b">{t.more_photos}</span><span className="a">{t.show_less}</span>
+          </button>
         </div>
       </section>
 
@@ -290,7 +294,7 @@ export default function Site({ content }: { content: SiteContent }) {
             <div className="car" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
               <div className="track" style={{ transform: `translateX(-${cur * 100}%)` }}>
                 {posts.map((p) => (
-                  <div className="post" key={p.id}>
+                  <div className={`post${open[p.id] ? " open" : ""}`} key={p.id} onClick={toggle(p.id)}>
                     {p.image_url && <img src={p.image_url} alt="" loading="lazy" />}
                     <div className="pt">
                       <p>{L(p.text_en, p.text_hi)}</p>
@@ -334,7 +338,7 @@ export default function Site({ content }: { content: SiteContent }) {
             <h4>{t.f_sections}</h4>
             <ul>
               <li><a href="#about">{t.n_about}</a></li><li><a href="#journey">{t.n_journey}</a></li><li><a href="#work">{t.n_work}</a></li>
-              <li><a href="#speeches">{t.n_speeches}</a></li><li><a href="#media">{t.n_media}</a></li><li><a href="#updates">{t.n_updates}</a></li><li><a href="#contact">{t.n_contact}</a></li>
+              <li><a href="#media">{t.n_media}</a></li><li><a href="#updates">{t.n_updates}</a></li><li><a href="#contact">{t.n_contact}</a></li>
             </ul>
           </div>
           <div className="src">
@@ -343,11 +347,10 @@ export default function Site({ content }: { content: SiteContent }) {
               <li><a href="https://www.bjp.org/shri-nitin-nabin">bjp.org — official profile</a></li>
               <li><a href="https://prsindia.org/mlatrack/nitin-nabin">PRS Legislative Research</a></li>
               <li><a href="https://ddnews.gov.in/en/nitin-nabin-takes-charge-as-bjp-national-president/">DD News</a></li>
-              <li><a href="https://www.newsonair.gov.in/">Akashvani News</a></li>
               <li><a href="https://en.wikipedia.org/wiki/Nitin_Nabin">Wikipedia</a></li>
             </ul>
           </div>
-          <div><h4>{t.f_policy}</h4><p>{t.f_policy1}</p><p>{t.f_policy2}</p></div>
+          <div><h4>{t.f_policy}</h4><p>{t.f_policy1}</p></div>
           <div className="legal">
             <span>{t.f_copy}</span>
             <span><a href="#">{t.f_a11y}</a><a href="#">{t.f_privacy}</a><a href="#">{t.f_corr}</a></span>

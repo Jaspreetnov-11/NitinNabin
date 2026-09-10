@@ -1,7 +1,7 @@
 # Nitin Nabin — profile site (Next.js + Supabase + Vercel)
 
 Bilingual (EN / हिं) public-profile site, built from `nitinnabin-final.html`.
-Content (updates, journey, speeches, gallery, social posts) comes from Supabase;
+Content (updates, journey, gallery, social posts) comes from Supabase;
 the contact form saves messages to Supabase. Deploys to Vercel in one click.
 
 ```
@@ -11,8 +11,9 @@ app/
   globals.css           all styles
   api/contact/route.ts  POST → contact_messages table
 components/
-  Site.tsx              the whole page (client: EN/HI toggle, journey year picker, social carousel, bottom nav)
+  Site.tsx              the whole page (client: EN/HI toggle, journey year picker, updates marquee, social carousel, mobile tap-to-expand, bottom nav)
   ContactForm.tsx       contact form
+  ScrollReset.tsx       fresh loads start at the top
 lib/
   i18n.ts               static UI strings + bio/positions/facts (EN + HI)
   supabase.ts           Supabase clients
@@ -87,9 +88,8 @@ Supabase → **Table Editor**:
 
 | Table | Section on site | Notes |
 |---|---|---|
-| `updates` | Latest updates + top ticker | Newest `event_date` first. Max 8 shown. `summary_*` card ke andar ka chhota paragraph hai. |
+| `updates` | Latest updates (scrolling marquee) + top ticker | Newest `event_date` first. Max 8 shown. `summary_*` card ke andar ka chhota paragraph hai. |
 | `milestones` | Journey (year picker + card) | `sort_order` se order; last wala default selected. `record_*` card ke neeche "Record —" line. |
-| `speeches` | Speeches | Newest first, max 8. `video_url` daal do to "Watch" link dikhta hai, warna "No video or transcript" badge. |
 | `gallery` | Photo record | Pehla item bada dikhta hai. 6 shown. `sub_*` chhota sub-caption. |
 | `social_posts` | Official social media feed (carousel) | `platform` = `fb` / `x` / `ig` / `yt`. `label_*` = post ka tag (YouTube ke liye duration), `when_*` = date ya "3 days ago", `stats` = likes/views text. `post_url` do to "View on …" link us post pe jaata hai. |
 | `contact_messages` | (inbox) | Contact form ke messages yahan aate hain. Public read nahi hai. |

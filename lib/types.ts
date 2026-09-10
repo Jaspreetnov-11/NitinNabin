@@ -73,7 +73,6 @@ export type SocialPost = {
 export type SiteContent = {
   updates: Update[];
   milestones: Milestone[];
-  speeches: Speech[];
   gallery: GalleryItem[];
   social: SocialPost[];
   source: "supabase" | "seed";
