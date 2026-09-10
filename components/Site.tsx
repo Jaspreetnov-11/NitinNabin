@@ -17,6 +17,7 @@ export default function Site({ content }: { content: SiteContent }) {
   // journey
   const [jIdx, setJIdx] = useState(Math.max(0, content.milestones.length - 1));
   const yearsRef = useRef<HTMLDivElement>(null);
+  const hasMounted = useRef(false);
   const j = content.milestones[jIdx];
 
   // social
@@ -36,10 +37,22 @@ export default function Site({ content }: { content: SiteContent }) {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  useEffect(() => {
-    const sel = yearsRef.current?.querySelector<HTMLElement>('[aria-selected="true"]');
-    sel?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
-  }, [jIdx]);
+ useEffect(() => {
+  if (!hasMounted.current) {
+    hasMounted.current = true;
+    return;
+  }
+
+  const sel = yearsRef.current?.querySelector<HTMLElement>(
+    '[aria-selected="true"]'
+  );
+
+  sel?.scrollIntoView({
+    block: "nearest",
+    inline: "center",
+    behavior: "smooth",
+  });
+}, [jIdx]);
 
   useEffect(() => {
     const io = new IntersectionObserver(
