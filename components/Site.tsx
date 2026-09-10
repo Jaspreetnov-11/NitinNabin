@@ -38,7 +38,6 @@ export default function Site({ content }: { content: SiteContent }) {
   // mobile "tap to open" / "show more" state (CSS only applies it below 768px)
   const [bioOpen, setBioOpen] = useState(false);
   const [posOpen, setPosOpen] = useState(false);
-  const [galOpen, setGalOpen] = useState(false);
   const [jOpen, setJOpen] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const toggle = (key: string) => (e: MouseEvent) => {
@@ -263,7 +262,7 @@ export default function Site({ content }: { content: SiteContent }) {
       <section className="gal" id="media">
         <div className="wrap">
           <h2>{t.gal_h}</h2>
-          <div className={`grid${galOpen ? " open" : ""}`}>
+          <div className="grid">
             {content.gallery.map((g) => (
               <a key={g.id} href={g.image_url} target="_blank" rel="noopener">
                 <img src={g.image_url} alt={L(g.caption_en, g.caption_hi)} loading="lazy" />
@@ -271,9 +270,6 @@ export default function Site({ content }: { content: SiteContent }) {
               </a>
             ))}
           </div>
-          <button className={`more-btn${galOpen ? " open" : ""}`} onClick={() => setGalOpen((v) => !v)}>
-            <span className="b">{t.more_photos}</span><span className="a">{t.show_less}</span>
-          </button>
         </div>
       </section>
 

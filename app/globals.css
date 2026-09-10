@@ -65,8 +65,8 @@ section{padding:clamp(36px,5.5vw,72px) 0}
   .hero .txt{text-align:left}
   .hero .acts{margin-top:12px;gap:8px}.hero .acts .btn{padding:10px 15px;font-size:13px}
   .hero .r{font-size:9.5px}
-  .hero .por{flex:1;min-height:200px;height:auto;margin:6px 0 0}
-  .hero .por::before{left:50%;top:auto;bottom:-4%;transform:translateX(-50%);width:min(82%,320px);max-height:none}
+  .hero .por{flex:1;width:100%;min-height:200px;height:auto;margin:6px 0 0}
+  .hero .por::before{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(92%,340px);max-height:none}
   .hero .por img{left:50%;transform:translateX(-50%);height:100%}
 }
 /* ticker */
@@ -325,7 +325,6 @@ footer .legal span{display:flex;gap:14px}
   .pos li{grid-template-columns:96px 1fr;padding:11px 6px;margin:0 -6px;font-size:14px}
   .pos li:nth-child(n+5){display:none}.pos ol.open li{display:grid}
   .pos .note{display:none}
-  .gal .grid a:nth-child(n+5){display:none}.gal .grid.open a{display:block}
   .nl .grid article p{display:none}.nl .grid article.open p{display:block}
   .nl .grid article{cursor:pointer;padding:16px 16px}.nl .grid article::after{content:"Tap to read";font-size:11px;color:var(--mute);display:block;margin-top:6px}.nl .grid article.open::after{content:""}
   .post .pt p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.post.open .pt p{-webkit-line-clamp:unset}
