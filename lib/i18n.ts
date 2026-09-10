@@ -6,7 +6,7 @@ type SocialProfile = { label: string; who: string; sub: string; btn: string; url
 
 const en = {
   name: "Nitin Nabin", first: "Nitin", last: "Nabin",
-  role: "National President, Bharatiya Janata Party", role_short: "National President, BJP",
+  role: "National President, Bharatiya Janata Party", role_1: "National President", role_2: "Bharatiya Janata Party", role_short: "National President, BJP",
   n_home: "Home", n_about: "About", n_journey: "Journey", n_work: "Work", n_updates: "Updates", n_media: "Media", n_contact: "Contact",
   hero_p: "A journey shaped by public trust, organisational work and a steady commitment to service.",
   cta1: "See the journey", cta2: "Latest updates",
@@ -59,7 +59,7 @@ export type Strings = typeof en;
 
 const hi: Strings = {
   name: "नितिन नबीन", first: "नितिन", last: "नबीन",
-  role: "राष्ट्रीय अध्यक्ष, भारतीय जनता पार्टी", role_short: "राष्ट्रीय अध्यक्ष, भाजपा",
+  role: "राष्ट्रीय अध्यक्ष, भारतीय जनता पार्टी", role_1: "राष्ट्रीय अध्यक्ष", role_2: "भारतीय जनता पार्टी", role_short: "राष्ट्रीय अध्यक्ष, भाजपा",
   n_home: "होम", n_about: "परिचय", n_journey: "यात्रा", n_work: "कार्य", n_updates: "अपडेट", n_media: "मीडिया", n_contact: "संपर्क",
   hero_p: "जनविश्वास, संगठनात्मक कार्य और सेवा के प्रति निरंतर प्रतिबद्धता से आकार लेती एक यात्रा।",
   cta1: "यात्रा देखें", cta2: "नवीनतम अपडेट",

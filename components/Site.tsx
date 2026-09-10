@@ -115,10 +115,13 @@ export default function Site({ content }: { content: SiteContent }) {
       <section className="hero" id="home">
         <div className="wrap">
           <div className="txt">
-            <div className="r">{t.role}</div>
+            <div className="r"><span className="r1">{t.role_1}</span><span className="r2">{t.role_2}</span></div>
             <h1><span>{t.first}</span><span>{t.last}</span></h1>
             <p>{t.hero_p}</p>
-            <div className="acts"><a className="btn" href="#journey">{t.cta1}</a><a className="btn o" href="#updates">{t.cta2}</a></div>
+            <div className="acts">
+              <a className="btn" href="#journey">{t.cta1}<span aria-hidden="true">→</span></a>
+              <a className="btn o" href="#updates">{t.cta2}</a>
+            </div>
           </div>
           <div className="por"><img src={`${IMG}/portrait-cutout.png`} alt="Nitin Nabin, official portrait" /></div>
         </div>

@@ -48,6 +48,7 @@ section{padding:clamp(36px,5.5vw,72px) 0}
 .hero .txt{position:relative;z-index:2;padding:30px 0}
 .hero .r{font-family:var(--arch);font-weight:600;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--saf-d);display:flex;align-items:center;gap:10px}
 .hero .r::before{content:"";width:26px;height:2px;background:var(--saf);flex:none}
+.hero .r .r2::before{content:", "}
 .hero h1{font-weight:800;font-size:clamp(60px,10.5vw,152px);line-height:.9;letter-spacing:-.035em;margin:18px 0 22px}
 .hero h1 span{display:block}.hero h1 span:last-child{color:var(--saf)}
 .hero .txt p{font-size:clamp(16px,1.6vw,22px);max-width:30ch;color:#3E362D;line-height:1.5}
@@ -58,15 +59,20 @@ section{padding:clamp(36px,5.5vw,72px) 0}
 .hero .por img{position:absolute;left:50%;bottom:0;transform:translateX(-50%);height:100%;width:auto;max-width:none;object-fit:contain;object-position:bottom;filter:drop-shadow(0 30px 40px rgba(0,0,0,.28))}
 @media(max-width:767px){
   .hero .wrap{display:flex;flex-direction:column;height:calc(100svh - 58px - 42px - 96px);min-height:520px;max-height:none}
-  .hero .txt{padding:18px 0 0;flex:none}
-  .hero .r{font-size:9.5px;letter-spacing:.1em}
-  .hero h1{font-size:clamp(40px,12vw,54px);margin:8px 0 8px}
+  .hero .txt{padding:18px 0 0;flex:none;text-align:left}
+  /* eyebrow: two lines — NATIONAL PRESIDENT / Bharatiya Janata Party */
+  .hero .r{font-size:10.5px;letter-spacing:.12em;flex-wrap:wrap;row-gap:3px;column-gap:10px}
+  .hero .r .r1{font-weight:700}
+  .hero .r .r2{flex-basis:100%;padding-left:36px;font-size:8.5px;letter-spacing:.14em;font-weight:600;color:var(--mute)}
+  .hero .r .r2::before{content:none}
+  /* name on one line: black "Nitin" + orange "Nabin" */
+  .hero h1{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:.22em;font-size:clamp(40px,13vw,56px);line-height:1;margin:10px 0 10px}
+  .hero h1 span{display:inline}
   .hero .txt p{font-size:13.5px;max-width:30ch}
-  .hero .txt{text-align:left}
-  .hero .acts{margin-top:12px;gap:8px}.hero .acts .btn{padding:10px 15px;font-size:13px}
-  .hero .r{font-size:9.5px}
+  .hero .acts{margin-top:12px;gap:8px}.hero .acts .btn{padding:10px 15px;font-size:13px;gap:8px}
+  /* portrait: circle anchored to the bottom so the head rises above it */
   .hero .por{flex:1;width:100%;min-height:200px;height:auto;margin:6px 0 0}
-  .hero .por::before{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(92%,340px);max-height:none}
+  .hero .por::before{left:50%;top:auto;bottom:0;transform:translateX(-50%);width:min(86%,340px);max-height:none}
   .hero .por img{left:50%;transform:translateX(-50%);height:100%}
 }
 /* ticker */
