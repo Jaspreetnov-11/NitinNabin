@@ -58,8 +58,8 @@ section{padding:clamp(36px,5.5vw,72px) 0}
 .hero .por::before{content:"";position:absolute;left:50%;top:50%;width:min(100%,720px);max-height:96%;aspect-ratio:1;border-radius:50%;background:var(--saf);transform:translate(-50%,-48%)}
 .hero .por img{position:absolute;left:50%;bottom:0;transform:translateX(-50%);height:100%;width:auto;max-width:none;object-fit:contain;object-position:bottom;filter:drop-shadow(0 30px 40px rgba(0,0,0,.28))}
 @media(max-width:767px){
-  /* Sized by viewport WIDTH only (not height) so every phone gets the same layout */
-  .hero .wrap{display:flex;flex-direction:column;height:auto;min-height:0;max-height:none}
+  /* First screen = header + hero + ticker + bottom bar. Portrait takes whatever height is left. */
+  .hero .wrap{display:flex;flex-direction:column;height:calc(100svh - 58px - 42px - 72px - env(safe-area-inset-bottom));min-height:0;max-height:none}
   .hero .txt{padding:18px 0 0;flex:none;text-align:left}
   /* eyebrow: two lines — NATIONAL PRESIDENT / Bharatiya Janata Party */
   .hero .r{font-size:10.5px;letter-spacing:.12em;flex-wrap:wrap;row-gap:3px;column-gap:10px}
@@ -72,8 +72,10 @@ section{padding:clamp(36px,5.5vw,72px) 0}
   .hero .txt p{font-size:13.5px;max-width:30ch}
   .hero .acts{margin-top:12px;gap:8px}.hero .acts .btn{padding:10px 15px;font-size:13px;gap:8px}
   /* portrait: circle anchored to the bottom so the head rises above it */
-  .hero .por{flex:none;width:100%;height:min(104vw,430px);min-height:0;margin:18px 0 0}
+  .hero .por{flex:1;width:100%;height:auto;min-height:180px;margin:12px 0 0;container-type:size}
+  /* circle scales with the portrait's height (cqh) so head always rises ~20% above it; width fallback first */
   .hero .por::before{left:50%;top:auto;bottom:0;transform:translateX(-50%);width:min(92%,360px);max-height:none}
+  @supports (width:1cqh){.hero .por::before{width:min(80cqh,92cqw,380px)}}
   .hero .por img{left:50%;transform:translateX(-50%);height:100%}
 }
 /* ticker */
