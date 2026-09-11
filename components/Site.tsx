@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent, type TouchEvent } from "react";
-import type { Lang, Platform, SiteContent } from "@/lib/types";
+import { useEffect, useRef, useState, type MouseEvent, type TouchEvent, type PointerEvent, type WheelEvent } from "react";
+import type { Lang, Platform, SocialTab, SocialPost, SiteContent } from "@/lib/types";
 import { STRINGS, PLATFORMS } from "@/lib/i18n";
 import { fmtDate } from "@/lib/format";
 import ContactForm from "./ContactForm";
@@ -26,14 +26,82 @@ export default function Site({ content }: { content: SiteContent }) {
   const j = content.milestones[jIdx];
 
   // social
-  const [soc, setSoc] = useState<Platform>("fb");
-  const [page, setPage] = useState<Record<Platform, number>>({ fb: 0, x: 0, ig: 0, yt: 0 });
-  const touchX = useRef<number | null>(null);
-  const posts = content.social.filter((p) => p.platform === soc);
-  const prof = t.social[soc];
+  const [soc, setSoc] = useState<SocialTab>("all");
+  const [socialPosts, setSocialPosts] = useState<SocialPost[]>(content.social);
+  const [curIdx, setCurIdx] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const resumeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const feedTrackRef = useRef<HTMLDivElement>(null);
+
+  // Sync client with /api/social on mount to ensure fresh live feeds
+  useEffect(() => {
+    fetch("/api/social")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.success && Array.isArray(d.social) && d.social.length > 0) {
+          setSocialPosts(d.social);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const posts = soc === "all" ? socialPosts : socialPosts.filter((p) => p.platform === soc);
   const n = posts.length;
-  const cur = Math.min(page[soc], Math.max(0, n - 1));
-  const slide = (d: number) => setPage((p) => ({ ...p, [soc]: Math.max(0, Math.min(n - 1, cur + d)) }));
+  const tabProf = t.social[soc];
+
+  const pauseInteraction = () => {
+    setIsInteracting(true);
+    if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = setTimeout(() => {
+      setIsInteracting(false);
+    }, 4000); // 4s idle resumes auto-scroll
+  };
+
+  // 2-second auto-scroll interval (smoothly advances track by 1 card)
+  useEffect(() => {
+    if (isHovered || isInteracting || n <= 1) return;
+    const timer = setInterval(() => {
+      const el = feedTrackRef.current;
+      if (!el) return;
+      const card = el.querySelector<HTMLElement>(".soc-post-card");
+      const step = (card?.offsetWidth ?? 320) + 16;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (el.scrollLeft >= maxScroll - 15) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        el.scrollBy({ left: step, behavior: "smooth" });
+      }
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [isHovered, isInteracting, soc, n]);
+
+  const slide = (d: number) => {
+    pauseInteraction();
+    const el = feedTrackRef.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>(".soc-post-card");
+    const step = ((card?.offsetWidth ?? 320) + 16) * d;
+    el.scrollBy({ left: step, behavior: "smooth" });
+  };
+
+  const handleTabChange = (k: SocialTab) => {
+    pauseInteraction();
+    setSoc(k);
+    setCurIdx(0);
+    if (feedTrackRef.current) {
+      feedTrackRef.current.scrollTo({ left: 0, behavior: "smooth" });
+    }
+  };
+
+  const onFeedScroll = () => {
+    const el = feedTrackRef.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>(".soc-post-card");
+    const step = (card?.offsetWidth ?? 320) + 16;
+    const idx = Math.round(el.scrollLeft / step);
+    setCurIdx(Math.min(n - 1, Math.max(0, idx)));
+  };
 
   // mobile "tap to open" / "show more" state (CSS only applies it below 768px)
   const [bioOpen, setBioOpen] = useState(false);
@@ -73,12 +141,54 @@ export default function Site({ content }: { content: SiteContent }) {
     return () => io.disconnect();
   }, []);
 
-  const onTouchStart = (e: TouchEvent) => { touchX.current = e.touches[0].clientX; };
+  // Touch swipe support
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const onTouchStart = (e: TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    pauseInteraction();
+  };
   const onTouchEnd = (e: TouchEvent) => {
-    if (touchX.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchX.current;
-    if (Math.abs(dx) > 40) slide(dx < 0 ? 1 : -1);
-    touchX.current = null;
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = touchStartY.current !== null ? e.changedTouches[0].clientY - touchStartY.current : 0;
+    if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) {
+      slide(dx < 0 ? 1 : -1);
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  // Pointer drag support for desktop/laptop
+  const ptrStartX = useRef<number | null>(null);
+  const isDragging = useRef<boolean>(false);
+  const onPointerDown = (e: PointerEvent) => {
+    if (e.pointerType === "touch") return;
+    ptrStartX.current = e.clientX;
+    isDragging.current = true;
+    pauseInteraction();
+  };
+  const onPointerUp = (e: PointerEvent) => {
+    if (!isDragging.current || ptrStartX.current === null) return;
+    const dx = e.clientX - ptrStartX.current;
+    if (Math.abs(dx) > 35) {
+      slide(dx < 0 ? 1 : -1);
+    }
+    ptrStartX.current = null;
+    isDragging.current = false;
+  };
+
+  // Mouse wheel / trackpad horizontal scroll support
+  const lastWheel = useRef<number>(0);
+  const onWheel = (e: WheelEvent) => {
+    const now = Date.now();
+    if (now - lastWheel.current < 250) return;
+    const dx = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+    if (Math.abs(dx) > 20) {
+      lastWheel.current = now;
+      slide(dx > 0 ? 1 : -1);
+    }
   };
 
   const ticker = content.updates.map((u) => `${fmtDate(u.event_date, lang)} — ${L(u.title_en, u.title_hi)}`);
@@ -133,7 +243,15 @@ export default function Site({ content }: { content: SiteContent }) {
 
       <section className="stats">
         <div className="wrap">
-          {t.stats.map((s) => <div key={s[1]}><div className="disp">{s[0]}</div><small>{s[1]}<em>{s[2]}</em></small></div>)}
+          {t.stats.map((s) => (
+            <div className="stat-card" key={s[1]}>
+              <div className="disp">{s[0]}</div>
+              <small>
+                {s[1]}
+                <em>{s[2]}</em>
+              </small>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -278,38 +396,167 @@ export default function Site({ content }: { content: SiteContent }) {
 
       <section id="social">
         <div className="wrap">
-          <h2>{t.soc_h}</h2>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <h2>{t.soc_h}</h2>
+            <div className="live-pill">
+              <span className="live-dot" />
+              <span>{lang === "hi" ? "लाइव सोशल फ़ीड" : "Live Social Feed"}</span>
+            </div>
+          </div>
           <div className="tabs" role="tablist">
             {PLATFORMS.map((k) => (
-              <button key={k} className="tab" role="tab" aria-selected={k === soc} onClick={() => setSoc(k)}>{t.social[k].label}</button>
+              <button
+                key={k}
+                className="tab"
+                role="tab"
+                aria-selected={k === soc}
+                onClick={() => handleTabChange(k)}
+              >
+                {t.social[k].label}
+              </button>
             ))}
           </div>
-          <div className="feed">
+          <div
+            className="feed"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
             <div className="who">
-              <img src={`${IMG}/portrait-cutout.png`} alt="" />
-              <div><b>{prof.who}</b><small>{prof.sub}</small></div>
-              <a href={prof.url} target="_blank" rel="noopener">{prof.btn}</a>
+              <img src={`${IMG}/portrait-cutout.png`} alt="Nitin Nabin" />
+              <div>
+                <b>
+                  {soc === "all" ? t.name : tabProf.who}
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="#1877F2">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                  </svg>
+                </b>
+                <small>
+                  {soc === "all" ? (lang === "hi" ? "आधिकारिक सोशल मीडिया हैंडल · रियल टाइम" : "Official Social Media · Live Synced") : tabProf.sub}
+                </small>
+              </div>
+              <a
+                href={soc === "all" ? "https://www.facebook.com/NitinNabinBJP/" : tabProf.url}
+                target="_blank"
+                rel="noopener"
+              >
+                {soc === "all" ? (lang === "hi" ? "फॉलो करें ↗" : "Follow ↗") : tabProf.btn}
+              </a>
             </div>
-            <div className="car" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-              <div className="track" style={{ transform: `translateX(-${cur * 100}%)` }}>
-                {posts.map((p) => (
-                  <div className={`post${open[p.id] ? " open" : ""}`} key={p.id} onClick={toggle(p.id)}>
-                    {p.image_url && <img src={p.image_url} alt="" loading="lazy" />}
-                    <div className="pt">
-                      <p>{L(p.text_en, p.text_hi)}</p>
-                      <div className="m"><b>{L(p.label_en, p.label_hi)}</b> · {L(p.when_en, p.when_hi)} · {p.stats}</div>
-                    </div>
-                  </div>
-                ))}
+
+            <div className="feed-track-wrap">
+              <div
+                className="feed-track"
+                ref={feedTrackRef}
+                onScroll={onFeedScroll}
+                onTouchStart={pauseInteraction}
+                onPointerDown={pauseInteraction}
+                onWheel={pauseInteraction}
+              >
+                {posts.map((p) => {
+                  const pHandle =
+                    p.platform === "fb" ? "@NitinNabinBJP" :
+                    p.platform === "x" ? "@NitinNabin" :
+                    p.platform === "ig" ? "@nitinnabinbjp" : "@BJP4India";
+
+                  const isVideo = p.platform === "yt" || p.id.includes("temple");
+
+                  return (
+                    <a
+                      key={p.id}
+                      href={p.post_url ?? "#"}
+                      target="_blank"
+                      rel="noopener"
+                      className="soc-post-card"
+                      onClick={() => pauseInteraction()}
+                    >
+                      <div className="soc-card-head">
+                        <img src={`${IMG}/portrait-cutout.png`} alt="" className="soc-card-avatar" />
+                        <div className="soc-card-user">
+                          <div className="soc-card-name-row">
+                            <b>Nitin Nabin</b>
+                            <span className="soc-verified-badge" title="Verified">
+                              <svg viewBox="0 0 24 24" width="14" height="14" fill="#1877F2">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                              </svg>
+                            </span>
+                          </div>
+                          <div className="soc-card-sub">
+                            <span>{pHandle}</span>
+                            <span className="soc-dot">·</span>
+                            <span>{L(p.when_en, p.when_hi)}</span>
+                          </div>
+                        </div>
+                        <div className={`soc-platform-icon soc-icon-${p.platform}`} title={t.social[p.platform].label}>
+                          {p.platform === "fb" && (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#1877F2">
+                              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                            </svg>
+                          )}
+                          {p.platform === "x" && (
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="#0F1419">
+                              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                            </svg>
+                          )}
+                          {p.platform === "ig" && (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                            </svg>
+                          )}
+                          {p.platform === "yt" && (
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="#FF0000">
+                              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+
+                      {p.image_url && (
+                        <div className="soc-media-wrap">
+                          <img src={p.image_url} alt="" loading="lazy" className="soc-media-img" />
+                          {isVideo && (
+                            <div className="soc-video-badge">
+                              <span className="soc-play-icon">▶</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="soc-body">
+                        <p className="soc-text">{L(p.text_en, p.text_hi)}</p>
+                        <div className="soc-meta-tag">
+                          <b>{L(p.label_en, p.label_hi)}</b>
+                        </div>
+                      </div>
+
+                      <div className="soc-foot">
+                        <span className="soc-stats">{p.stats}</span>
+                        <span className="soc-post-link">
+                          {p.platform === "yt"
+                            ? (lang === "hi" ? "वीडियो देखें ▶" : "Watch ▶")
+                            : (lang === "hi" ? "पोस्ट देखें ↗" : "View Post ↗")}
+                        </span>
+                      </div>
+                    </a>
+                  );
+                })}
               </div>
             </div>
+
             <div className="pg">
               <div className="bt">
-                <button onClick={() => slide(-1)} disabled={cur === 0} aria-label="prev">‹</button>
-                <button onClick={() => slide(1)} disabled={cur >= n - 1} aria-label="next">›</button>
+                <button onClick={() => slide(-1)} aria-label="prev">‹</button>
+                <button onClick={() => slide(1)} aria-label="next">›</button>
               </div>
-              <span>{n ? t.post_of(cur + 1, n) : ""}</span>
-              <a href={posts[cur]?.post_url ?? prof.url} target="_blank" rel="noopener">{t.view_on} {prof.label}</a>
+              <span>{n ? t.post_of(curIdx + 1, n) : ""}</span>
+              <a
+                href={soc === "all" ? "https://www.facebook.com/NitinNabinBJP/" : tabProf.url}
+                target="_blank"
+                rel="noopener"
+              >
+                {t.view_on} {tabProf.label} ↗
+              </a>
             </div>
           </div>
         </div>

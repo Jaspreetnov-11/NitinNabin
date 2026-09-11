@@ -1,6 +1,6 @@
 // Static UI strings and biographical copy (EN / HI).
 // Dynamic content (updates, milestones, gallery, social posts) lives in Supabase.
-import type { Lang, Platform } from "./types";
+import type { Lang, Platform, SocialTab } from "./types";
 
 type SocialProfile = { label: string; who: string; sub: string; btn: string; url: string };
 
@@ -48,11 +48,12 @@ const en = {
   f_policy1: "Every fact here is drawn from the listed public sources. Where a detail could not be confirmed from the public record, it has been left out rather than guessed.",
   f_copy: "© 2026. Informational public-profile site. Not an official party publication.", f_a11y: "Accessibility", f_privacy: "Privacy", f_corr: "Corrections",
   social: {
+    all: { label: "All Feeds", who: "Nitin Nabin", sub: "Live social media updates", btn: "View Profiles", url: "#contact" },
     fb: { label: "Facebook", who: "Nitin Nabin", sub: "1,240,890 followers", btn: "Follow Page", url: "https://www.facebook.com/NitinNabinBJP/" },
     x: { label: "X", who: "Nitin Nabin", sub: "@NitinNabin", btn: "Follow", url: "https://x.com/NitinNabin" },
     ig: { label: "Instagram", who: "nitinnabinbjp", sub: "842 posts · 480K", btn: "Follow", url: "https://www.instagram.com/nitinnabinbjp/" },
-    yt: { label: "YouTube", who: "Nitin Nabin Official", sub: "Speeches & Addresses", btn: "Subscribe", url: "https://www.youtube.com/@BJP4India" },
-  } as Record<Platform, SocialProfile>,
+    yt: { label: "YouTube", who: "Nitin Nabin / BJP Official", sub: "Speeches & Live Broadcasts", btn: "Subscribe", url: "https://www.youtube.com/@BJP4India" },
+  } as Record<SocialTab, SocialProfile>,
 };
 
 export type Strings = typeof en;
@@ -101,12 +102,13 @@ const hi: Strings = {
   f_policy1: "यहाँ दिया गया प्रत्येक तथ्य सूचीबद्ध सार्वजनिक स्रोतों से लिया गया है। जिस विवरण की पुष्टि सार्वजनिक अभिलेख से नहीं हो सकी, उसे अनुमान लगाने के बजाय छोड़ दिया गया है।",
   f_copy: "© 2026. सूचनात्मक सार्वजनिक-प्रोफ़ाइल साइट। यह पार्टी का आधिकारिक प्रकाशन नहीं है।", f_a11y: "सुगम्यता", f_privacy: "गोपनीयता", f_corr: "संशोधन",
   social: {
-    fb: { label: "Facebook", who: "Nitin Nabin", sub: "1,240,890 followers", btn: "पेज फ़ॉलो करें", url: "https://www.facebook.com/NitinNabinBJP/" },
-    x: { label: "X", who: "Nitin Nabin", sub: "@NitinNabin", btn: "फ़ॉलो करें", url: "https://x.com/NitinNabin" },
-    ig: { label: "Instagram", who: "nitinnabinbjp", sub: "842 posts · 480K", btn: "फ़ॉलो करें", url: "https://www.instagram.com/nitinnabinbjp/" },
-    yt: { label: "YouTube", who: "Nitin Nabin Official", sub: "Speeches & Addresses", btn: "सब्सक्राइब", url: "https://www.youtube.com/@BJP4India" },
+    all: { label: "सभी फ़ीड", who: "नितिन नबीन", sub: "लाइव सोशल मीडिया अपडेट", btn: "प्रोफ़ाइल देखें", url: "#contact" },
+    fb: { label: "Facebook", who: "नितिन नबीन", sub: "1,240,890 फॉलोअर्स", btn: "पेज फ़ॉलो करें", url: "https://www.facebook.com/NitinNabinBJP/" },
+    x: { label: "X", who: "नितिन नबीन", sub: "@NitinNabin", btn: "फ़ॉलो करें", url: "https://x.com/NitinNabin" },
+    ig: { label: "Instagram", who: "nitinnabinbjp", sub: "842 पोस्ट · 480K", btn: "फ़ॉलो करें", url: "https://www.instagram.com/nitinnabinbjp/" },
+    yt: { label: "YouTube", who: "नितिन नबीन / भाजपा आधिकारिक", sub: "संबोधन एवं लाइव अपडेट", btn: "सब्सक्राइब", url: "https://www.youtube.com/@BJP4India" },
   },
 };
 
 export const STRINGS: Record<Lang, Strings> = { en, hi };
-export const PLATFORMS: Platform[] = ["fb", "x", "ig", "yt"];
+export const PLATFORMS: SocialTab[] = ["all", "fb", "x", "ig", "yt"];

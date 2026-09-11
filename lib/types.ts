@@ -1,5 +1,6 @@
 export type Lang = "en" | "hi";
 export type Platform = "fb" | "x" | "ig" | "yt";
+export type SocialTab = "all" | Platform;
 
 export type Update = {
   id: string;

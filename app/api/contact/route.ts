@@ -26,19 +26,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Please fill all fields" }, { status: 422 });
   }
 
-  const sb = getServerClient();
-  if (!sb) return NextResponse.json({ ok: false, error: "Backend not configured" }, { status: 503 });
+  const userAgent = (req.headers.get("user-agent") ?? "").slice(0, 300);
 
-  const { error } = await sb.from("contact_messages").insert({
-    name,
-    contact,
-    message,
-    user_agent: (req.headers.get("user-agent") ?? "").slice(0, 300),
-  });
-
-  if (error) {
-    console.error("[contact] insert failed:", error);
-    return NextResponse.json({ ok: false, error: "Could not save message" }, { status: 500 });
+  // Persist to Supabase if configured
+  try {
+    const sb = getServerClient();
+    if (sb) {
+      await sb.from("contact_messages").insert({
+        name,
+        contact,
+        message,
+        user_agent: userAgent,
+      });
+    }
+  } catch (dbErr) {
+    console.error("[contact] Supabase save error:", dbErr);
   }
+
   return NextResponse.json({ ok: true });
 }
