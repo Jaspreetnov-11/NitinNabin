@@ -100,13 +100,26 @@ Har content row mein `published` false karo to site se hat jaata hai. Har text k
 
 **Images:** abhi `image_url` nitinnabin.com se link hai. Apni images ke liye Supabase → **Storage** → public bucket (e.g. `media`) banao, upload karo, public URL copy karke `image_url` mein daalo.
 
-## 5. Security notes
+## 5. Mobile app (`/app`)
+
+`/app` par ek alag, app-jaisa mobile experience hai — same Supabase content, installable PWA (home screen par add karo, offline bhi chalta hai).
+
+- Splash screen, stories (latest updates, tap / hold / swipe-down), "days as National President" live counter, count-up stats, flip cards
+- Journey: scroll karte hi sticky year counter + progress bar badalta hai
+- Feed: platform chips, double-tap like, share button (Web Share API)
+- Photos: masonry grid + swipe lightbox
+- Connect: social links, install button, contact form (`/api/contact`)
+- EN / हिं toggle yaad rehta hai; desktop par phone frame mein dikhta hai
+
+Files: `app/app/` (page + `app.css`), `components/app/`, `public/app.webmanifest`, `public/app-sw.js`, `public/app-icon*`.
+
+## 6. Security notes
 
 - Content tables: RLS on, sirf `published = true` rows public read. Insert/update sirf dashboard ya service-role key se.
 - `contact_messages`: anon insert allowed, read sirf dashboard / service role. API route mein length limits + honeypot hai.
 - `SUPABASE_SERVICE_ROLE_KEY` sirf Vercel env mein rakho, `NEXT_PUBLIC_` prefix kabhi mat lagao.
 
-## 6. Optional next steps
+## 7. Optional next steps
 
 - Admin panel (Supabase Auth + a `/admin` route) taaki team bina dashboard ke content edit kare.
 - Email notification on new contact message (Supabase Database Webhook → Resend).

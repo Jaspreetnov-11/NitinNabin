@@ -1,0 +1,25 @@
+{
+  "name": "Nitin Nabin",
+  "short_name": "Nitin Nabin",
+  "description": "Stories, journey, live social feed and photos — Nitin Nabin, National President, Bharatiya Janata Party.",
+  "id": "/app",
+  "start_url": "/app",
+  "scope": "/app",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#141110",
+  "theme_color": "#F07A1F",
+  "lang": "en",
+  "categories": ["news", "social"],
+  "icons": [
+    { "src": "/app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    { "name": "Journey", "url": "/app#journey" },
+    { "name": "Social feed", "url": "/app#feed" },
+    { "name": "Photos", "url": "/app#gallery" }
+  ]
+}

@@ -599,7 +599,7 @@ export default function Site({ content }: { content: SiteContent }) {
           <div><h4>{t.f_policy}</h4><p>{t.f_policy1}</p></div>
           <div className="legal">
             <span>{t.f_copy}</span>
-            <span><a href="#">{t.f_a11y}</a><a href="#">{t.f_privacy}</a><a href="#">{t.f_corr}</a></span>
+            <span><a href="/app">{lang === "hi" ? "मोबाइल ऐप" : "Mobile app"}</a><a href="#">{t.f_a11y}</a><a href="#">{t.f_privacy}</a><a href="#">{t.f_corr}</a></span>
           </div>
         </div>
       </footer>
